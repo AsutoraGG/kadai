@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>課題管理</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg0: #080b12;
+  --bg1: #0d111c;
+  --bg2: #131825;
+  --bg3: #1b2133;
+  --bg4: #232a3f;
+  --line: #1e2740;
+  --line2: #2a3350;
+  --text0: #e8ecf8;
+  --text1: #9aa3c0;
+  --text2: #5a6285;
+  --text3: #353d58;
+  --accent: #4f8ef7;
+  --accent-dim: #3670d4;
+  --accent-glow: rgba(79,142,247,0.12);
+  --red: #e85555;
+  --red-dim: rgba(232,85,85,0.1);
+  --orange: #e8943a;
+  --orange-dim: rgba(232,148,58,0.1);
+  --yellow: #c9a83a;
+  --yellow-dim: rgba(201,168,58,0.1);
+  --green: #3ab87e;
+  --green-dim: rgba(58,184,126,0.1);
+  --r: 8px;
+  --rl: 12px;
+  --rxl: 16px;
+}
+html { font-size: 15px; }
+body {
+  font-family: 'Outfit', system-ui, sans-serif;
+  background: var(--bg0);
+  color: var(--text0);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Setup screen ── */
+#setup-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 32px;
+}
+.setup-card {
+  background: var(--bg1);
+  border: 1px solid var(--line2);
+  border-radius: var(--rxl);
+  padding: 40px;
+  width: 480px;
+  max-width: 100%;
+}
+.setup-card h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.setup-card .sub { color: var(--text1); font-size: 13.5px; margin-bottom: 28px; line-height: 1.5; }
+.setup-steps { counter-reset: step; }
+.setup-step {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  font-family: 'DM Mono', monospace;
+}
+.step-body { flex: 1; }
+.step-label { font-size: 13px; font-weight: 600; color: var(--text0); margin-bottom: 6px; }
+.step-desc { font-size: 12px; color: var(--text1); line-height: 1.5; }
+.step-desc a { color: var(--accent); text-decoration: none; }
+.step-desc code {
+  background: var(--bg3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--yellow);
+}
+
+/* ── Layout ── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+/* ── Topbar ── */
+.topbar {
+  background: var(--bg1);
+  border-bottom: 1px solid var(--line);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.logo { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; margin-right: 8px; }
+.logo span { color: var(--accent); }
+
+.tab-nav { display: flex; gap: 2px; }
+.tab-btn {
+  padding: 6px 14px;
+  border: none;
+  background: none;
+  border-radius: var(--r);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tab-btn:hover { color: var(--text1); background: var(--bg3); }
+.tab-btn.active { background: var(--accent-glow); color: var(--accent); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 6px 11px;
+  width: 200px;
+  transition: border-color 0.15s;
+}
+.search-box:focus-within { border-color: var(--accent); }
+.search-box input {
+  background: none; border: none; outline: none;
+  font-family: inherit; font-size: 13px; color: var(--text0); width: 100%;
+}
+.search-box input::placeholder { color: var(--text3); }
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--r);
+  padding: 7px 15px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+.btn-add:hover { background: var(--accent-dim); }
+.btn-add:active { transform: scale(0.97); }
+
+/* ── Stats strip ── */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.stat-cell {
+  background: var(--bg1);
+  padding: 12px 22px;
+}
+.stat-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); }
+.stat-val { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 500; color: var(--text0); }
+.stat-cell.s-red .stat-val { color: var(--red); }
+.stat-cell.s-orange .stat-val { color: var(--orange); }
+
+/* ── Content ── */
+.content { padding: 24px 28px; max-width: 900px; margin: 0 auto; width: 100%; }
+
+/* ── Countdown strip ── */
+.cd-wrap { margin-bottom: 26px; }
+.section-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.section-head h2 { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text2); white-space: nowrap; }
+.section-line { flex: 1; height: 1px; background: var(--line); }
+
+.countdown-strip {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.countdown-strip::-webkit-scrollbar { display: none; }
+.cd-card {
+  flex-shrink: 0;
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: var(--rl);
+  padding: 12px 16px;
+  min-width: 140px;
+  transition: border-color 0.15s;
+  cursor: default;
+}
+.cd-card:hover { border-color: var(--line2); }
+.cd-card .cdt { font-size: 11.5px; font-weight: 600; color: var(--text1); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.cd-card .cdn { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1; }
+.cd-card .cdl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.cd-card.cd-today .cdn { color: var(--orange); }
+.cd-card.cd-soon .cdn { color: var(--yellow); }
+.cd-card.cd-ok .cdn { color: var(--green); }
+
+/* ── Sort / filter bar ── */
+.filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--line2);
+  background: none;
+  color: var(--text2);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+.chip-sep { width: 1px; height: 18px; background: var(--line2); }
+
+/* ── Task list ── */
+.task-list { display: flex; flex-direction: column; gap: 7px; }
+
+.task-card {
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--rl);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color 0.15s, transform 0.1s;
+  position: relative;
+}
+.task-card:hover { border-color: var(--line2); transform: translateY(-1px); }
+.task-card.done { opacity: 0.38; }
+
+/* left accent bar */
+.task-card.dl-overdue { border-left: 2.5px solid var(--red); }
+.task-card.dl-today   { border-left: 2.5px solid var(--orange); }
+.task-card.dl-soon    { border-left: 2.5px solid var(--yellow); }
+.task-card.dl-ok      { border-left: 2.5px solid var(--green); }
+
+.task-check {
+  width: 19px; height: 19px;
+  border: 1.5px solid var(--line2);
+  border-radius: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  background: none;
+}
+.task-check:hover { border-color: var(--green); }
+.task-check.checked { background: var(--green); border-color: var(--green); }
+.task-check.checked::after {
+  content: '';
+  width: 9px; height: 5px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+.task-body { flex: 1; min-width: 0; }
+.task-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text0);
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+.task-card.done .task-title { text-decoration: line-through; color: var(--text3); }
+
+.task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tag-sub {
+  font-size: 11px; font-weight: 600;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--bg3);
+  color: var(--text1);
+}
+.dl-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 8px;
+  border-radius: var(--r);
+}
+.dl-badge.overdue { background: var(--red-dim); color: var(--red); }
+.dl-badge.today   { background: var(--orange-dim); color: var(--orange); }
+.dl-badge.soon    { background: var(--yellow-dim); color: var(--yellow); }
+.dl-badge.ok      { background: var(--green-dim); color: var(--green); }
+.dl-badge.none    { background: var(--bg3); color: var(--text3); }
+
+.recurring-tag {
+  font-size: 10.5px; font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 20px;
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.task-note { margin-top: 5px; font-size: 12px; color: var(--text2); line-height: 1.5; }
+
+.task-actions { display: flex; gap: 3px; flex-shrink: 0; }
+.icon-btn {
+  width: 27px; height: 27px;
+  border: none; background: none;
+  border-radius: var(--r);
+  cursor: pointer;
+  color: var(--text3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.icon-btn:hover { background: var(--bg3); color: var(--text1); }
+.icon-btn.del:hover { background: var(--red-dim); color: var(--red); }
+
+/* ── Empty ── */
+.empty { display: flex; flex-direction: column; align-items: center; padding: 64px 32px; gap: 10px; color: var(--text3); text-align: center; }
+.empty-icon { font-size: 44px; opacity: 0.35; }
+.empty p { font-size: 13px; }
+
+/* ── Recurring rules tab ── */
+.rule-list { display: flex; flex-direction: column; gap: 8px; }
+.rule-card {
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: var(--rl);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color 0.15s;
+}
+.rule-card:hover { border-color: var(--line2); }
+.rule-card.inactive { opacity: 0.4; }
+.rule-body { flex: 1; min-width: 0; }
+.rule-title { font-size: 14px; font-weight: 600; color: var(--text0); margin-bottom: 5px; }
+.rule-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.day-badge {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  padding: 2px 9px;
+  border-radius: var(--r);
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+.weeks-badge {
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--bg3);
+  color: var(--text1);
+}
+.toggle-btn {
+  width: 36px; height: 20px;
+  background: var(--bg4);
+  border: 1px solid var(--line2);
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-btn::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  background: var(--text2);
+  border-radius: 50%;
+  top: 2px; left: 2px;
+  transition: all 0.2s;
+}
+.toggle-btn.on { background: var(--accent); border-color: var(--accent); }
+.toggle-btn.on::after { left: 18px; background: #fff; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+  backdrop-filter: blur(6px);
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg1);
+  border: 1px solid var(--line2);
+  border-radius: var(--rxl);
+  padding: 26px;
+  width: 480px;
+  max-width: 92vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  transform: scale(0.95) translateY(8px);
+  transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: scale(1) translateY(0); }
+
+.modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.modal-hd h2 { font-size: 16px; font-weight: 700; }
+
+.form-label {
+  display: block;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 6px;
+}
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--text0);
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 16px;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-select option { background: var(--bg2); }
+.form-textarea { min-height: 72px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row .form-input, .form-row .form-select { margin-bottom: 0; }
+
+/* recurring section in modal */
+.recurring-section {
+  border: 1px solid var(--line);
+  border-radius: var(--rl);
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg2);
+}
+.recurring-toggle-row {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;
+}
+.recurring-toggle-row label { font-size: 13.5px; font-weight: 600; color: var(--text0); cursor: pointer; }
+.recurring-fields { margin-top: 16px; display: none; }
+.recurring-fields.show { display: block; }
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.day-btn {
+  aspect-ratio: 1;
+  border: 1px solid var(--line2);
+  background: none;
+  border-radius: var(--r);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s;
+  padding: 0;
+}
+.day-btn:hover { border-color: var(--accent); color: var(--accent); }
+.day-btn.sel { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.btn-cancel {
+  background: none; border: 1px solid var(--line2); border-radius: var(--r);
+  padding: 8px 18px; font-family: inherit; font-size: 13.5px; font-weight: 600;
+  color: var(--text2); cursor: pointer; transition: all 0.15s;
+}
+.btn-cancel:hover { background: var(--bg3); color: var(--text1); }
+.btn-save {
+  background: var(--accent); border: none; border-radius: var(--r);
+  padding: 8px 22px; font-family: inherit; font-size: 13.5px; font-weight: 700;
+  color: #fff; cursor: pointer; transition: background 0.15s;
+}
+.btn-save:hover { background: var(--accent-dim); }
+.btn-save:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg3); border: 1px solid var(--line2);
+  border-radius: var(--rl); padding: 10px 20px;
+  font-size: 13px; font-weight: 600; color: var(--text0);
+  transition: transform 0.3s; z-index: 200; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.err { border-color: var(--red); color: var(--red); }
+
+/* ── Spinner ── */
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-state { display: flex; align-items: center; justify-content: center; padding: 60px; gap: 12px; color: var(--text2); }
+
+/* ── Settings bar ── */
+.settings-bar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text2);
+}
+.settings-bar a { color: var(--accent); text-decoration: none; font-weight: 600; }
+
+@media (max-width: 640px) {
+  .stats-strip { grid-template-columns: 1fr 1fr; }
+  .content { padding: 16px; }
+  .topbar { padding: 0 16px; }
+  .search-box { display: none; }
+  .topbar-right { gap: 6px; }
+  .form-row { grid-template-columns: 1fr; }
+  .days-grid { grid-template-columns: repeat(7, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     SETUP SCREEN (shown if no config saved)
+════════════════════════════════════════════════════ -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <h1>🎓 課題管理アプリ</h1>
+    <p class="sub">Supabaseを使ってクラウドに課題を保存します。複数PCからアクセスできます。<br>初回のみ以下の設定が必要です。</p>
+    <div class="setup-steps">
+      <div class="setup-step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-label">Supabaseプロジェクトを作成</div>
+          <div class="step-desc"><a href="https://supabase.com" target="_blank">supabase.com</a> で無料アカウントを作り、新しいプロジェクトを作成してください。</div>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-label">SQLでテーブルを作成</div>
+          <div class="step-desc">ダウンロードした <code>supabase_setup.sql</code> の内容を、ダッシュボードの <code>SQL Editor</code> に貼り付けて実行してください。</div>
+        </div>
+      </div>
+      <div class="setup-step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-label">接続情報を入力</div>
+          <div class="step-desc">Project Settings → API から <code>Project URL</code> と <code>anon public key</code> をコピーして貼り付けてください。</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 8px;">
+      <label class="form-label">Supabase Project URL</label>
+      <input class="form-input" id="cfg-url" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co" style="margin-bottom:12px;">
+      <label class="form-label">anon public key</label>
+      <input class="form-input" id="cfg-key" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      <button class="btn-save" style="width:100%;margin-top:4px;" onclick="setupConnect()">接続して開始</button>
+      <div id="setup-err" style="color:var(--red);font-size:12px;margin-top:8px;min-height:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN APP
+════════════════════════════════════════════════════ -->
+<div id="app">
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="logo">課題<span>管理</span></div>
+    <nav class="tab-nav">
+      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">📋 課題</button>
+      <button class="tab-btn" id="tab-recurring" onclick="switchTab('recurring')">🔁 定期課題</button>
+    </nav>
+    <div class="topbar-right">
+      <div class="search-box">
+        <span style="color:var(--text3);font-size:13px;">🔍</span>
+        <input type="text" id="search-input" placeholder="検索..." oninput="renderTasks()">
+      </div>
+      <button class="btn-add" id="add-btn" onclick="openModal()">＋ 追加</button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-strip" id="stats-strip">
+    <div class="stat-cell"><div class="stat-label">合計</div><div class="stat-val" id="s-total">—</div></div>
+    <div class="stat-cell"><div class="stat-label">未完了</div><div class="stat-val" id="s-active">—</div></div>
+    <div class="stat-cell s-red"><div class="stat-label">期限切れ</div><div class="stat-val" id="s-overdue">—</div></div>
+    <div class="stat-cell s-orange"><div class="stat-label">今日締切</div><div class="stat-val" id="s-today">—</div></div>
+  </div>
+
+  <!-- Settings info bar -->
+  <div class="settings-bar" id="settings-bar">
+    <span>🔗 接続済み</span>
+    <span id="conn-url" style="font-family:'DM Mono',monospace;font-size:11px;"></span>
+    <a href="#" onclick="resetConfig();return false;" style="margin-left:auto;">接続設定を変更</a>
+  </div>
+
+  <!-- Content area -->
+  <div style="flex:1;">
+    <!-- TASKS TAB -->
+    <div id="pane-tasks" class="content">
+      <!-- Countdown -->
+      <div class="cd-wrap" id="cd-section">
+        <div class="section-head">
+          <h2>⏰ 締切カウントダウン</h2>
+          <div class="section-line"></div>
+        </div>
+        <div class="countdown-strip" id="countdown-strip"></div>
+      </div>
+
+      <!-- Filter / sort bar -->
+      <div class="filter-bar">
+        <span style="font-size:11px;color:var(--text3);font-weight:700;">フィルター</span>
+        <button class="chip active" data-filt="all" onclick="setFilter('all',this)">すべて</button>
+        <button class="chip" data-filt="active" onclick="setFilter('active',this)">未完了</button>
+        <button class="chip" data-filt="overdue" onclick="setFilter('overdue',this)">期限切れ</button>
+        <button class="chip" data-filt="today" onclick="setFilter('today',this)">今日</button>
+        <button class="chip" data-filt="done" onclick="setFilter('done',this)">完了済み</button>
+        <div class="chip-sep"></div>
+        <span style="font-size:11px;color:var(--text3);font-weight:700;">並び替え</span>
+        <button class="chip active" id="sort-dl" onclick="setSort('deadline',this)">締切順</button>
+        <button class="chip" id="sort-cr" onclick="setSort('created',this)">追加順</button>
+      </div>
+
+      <div class="section-head">
+        <h2 id="list-label">課題一覧</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="task-list" id="task-list">
+        <div class="loading-state"><div class="spinner"></div> 読み込み中...</div>
+      </div>
+    </div>
+
+    <!-- RECURRING TAB -->
+    <div id="pane-recurring" class="content" style="display:none;">
+      <div class="section-head">
+        <h2>🔁 定期課題ルール</h2>
+        <div class="section-line"></div>
+      </div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6;">
+        毎週指定した曜日に課題を自動生成します。ページを開いたタイミングで当週分が未生成なら自動追加されます。
+      </p>
+      <div class="rule-list" id="rule-list">
+        <div class="loading-state"><div class="spinner"></div> 読み込み中...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL
+════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hd">
+      <h2 id="modal-title">課題を追加</h2>
+      <button class="icon-btn" onclick="closeModal()">✕</button>
+    </div>
+
+    <label class="form-label">課題名 *</label>
+    <input class="form-input" id="f-title" type="text" placeholder="例：数学 第3章 レポート">
+
+    <label class="form-label">科目</label>
+    <input class="form-input" id="f-subject" type="text" placeholder="例：数学">
+
+    <div class="form-row" style="margin-bottom:16px;">
+      <div>
+        <label class="form-label">提出期限</label>
+        <input class="form-input" id="f-deadline" type="date">
+      </div>
+      <div>
+        <label class="form-label">提出時刻</label>
+        <input class="form-input" id="f-time" type="time">
+      </div>
+    </div>
+
+    <label class="form-label">メモ</label>
+    <textarea class="form-textarea" id="f-note" placeholder="補足・提出場所など…"></textarea>
+
+    <!-- 繰り返し設定 -->
+    <div class="recurring-section" id="recurring-section">
+      <div class="recurring-toggle-row">
+        <label for="f-recurring">🔁 毎週繰り返し</label>
+        <div class="toggle-btn" id="recurring-toggle" onclick="toggleRecurring()"></div>
+      </div>
+      <div class="recurring-fields" id="recurring-fields">
+        <div style="margin-top:14px;">
+          <label class="form-label">繰り返す曜日（複数選択可）</label>
+          <div class="days-grid" id="days-grid">
+            <button type="button" class="day-btn" data-day="0">日</button>
+            <button type="button" class="day-btn" data-day="1">月</button>
+            <button type="button" class="day-btn" data-day="2">火</button>
+            <button type="button" class="day-btn" data-day="3">水</button>
+            <button type="button" class="day-btn" data-day="4">木</button>
+            <button type="button" class="day-btn" data-day="5">金</button>
+            <button type="button" class="day-btn" data-day="6">土</button>
+          </div>
+        </div>
+        <div>
+          <label class="form-label">締切は何週間後の上記曜日？</label>
+          <select class="form-select" id="f-weeks-ahead" style="margin-bottom:0;">
+            <option value="0">同じ週（その日の23:59）</option>
+            <option value="1" selected>1週間後</option>
+            <option value="2">2週間後</option>
+          </select>
+        </div>
+        <p style="font-size:11.5px;color:var(--text2);margin-top:12px;line-height:1.5;">
+          ⚠️ 繰り返しを有効にすると「定期課題ルール」として保存され、毎週自動で課題が追加されます。<br>
+          提出期限欄の入力は無視されます。
+        </p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" id="btn-save" onclick="saveTask()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════
+const CFG_KEY = 'sb_config_v1';
+let sb = null;
+
+function loadConfig() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)); } catch { return null; }
+}
+function saveConfig(url, key) {
+  localStorage.setItem(CFG_KEY, JSON.stringify({ url, key }));
+}
+function resetConfig() {
+  if (!confirm('接続設定を削除してリセットしますか？')) return;
+  localStorage.removeItem(CFG_KEY);
+  location.reload();
+}
+
+async function setupConnect() {
+  const url = document.getElementById('cfg-url').value.trim();
+  const key = document.getElementById('cfg-key').value.trim();
+  const err = document.getElementById('setup-err');
+  if (!url || !key) { err.textContent = 'URLとKeyを入力してください。'; return; }
+  err.textContent = '';
+  try {
+    const client = supabase.createClient(url, key);
+    const { error } = await client.from('tasks').select('id').limit(1);
+    if (error) throw error;
+    saveConfig(url, key);
+    location.reload();
+  } catch(e) {
+    err.textContent = '接続に失敗しました: ' + (e.message || '不明なエラー');
+  }
+}
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let tasks = [];
+let rules = [];
+let currentFilter = 'all';
+let currentSort = 'deadline';
+let editId = null;
+let isRecurring = false;
+let currentTab = 'tasks';
+
+const DAY_NAMES = ['日','月','火','水','木','金','土'];
+
+// ════════════════════════════════════════════
+// DATE HELPERS
+// ════════════════════════════════════════════
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function deadlineStatus(task) {
+  if (!task.deadline) return 'none';
+  const t = todayStr();
+  if (task.deadline < t) return 'overdue';
+  if (task.deadline === t) return 'today';
+  const d = Math.ceil((new Date(task.deadline) - new Date(t)) / 86400000);
+  return d <= 3 ? 'soon' : 'ok';
+}
+
+function daysUntil(dl) {
+  return Math.ceil((new Date(dl) - new Date(todayStr())) / 86400000);
+}
+
+function deadlineBadge(task) {
+  if (!task.deadline) return { cls:'none', text:'期限なし' };
+  const s = deadlineStatus(task);
+  const d = daysUntil(task.deadline);
+  const dt = task.deadline.slice(5).replace('-','/') + (task.deadline_time ? ' ' + task.deadline_time.slice(0,5) : '');
+  if (s==='overdue') return { cls:'overdue', text:`⚠ ${Math.abs(d)}日超過 (${dt})` };
+  if (s==='today')   return { cls:'today',   text:`🔥 今日 ${task.deadline_time ? task.deadline_time.slice(0,5) : ''}` };
+  if (s==='soon')    return { cls:'soon',    text:`⏰ あと${d}日 (${dt})` };
+  return { cls:'ok', text:`📅 ${dt} (あと${d}日)` };
+}
+
+// Next occurrence of dayOfWeek from a given date
+function nextWeekday(fromDate, dow) {
+  const d = new Date(fromDate);
+  const diff = (dow - d.getDay() + 7) % 7 || 7;
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0,10);
+}
+
+function getDeadlineForRule(rule, refDate) {
+  // find the deadline date: next occurrence of rule.day_of_week + weeks_ahead weeks
+  const base = nextWeekday(refDate, rule.day_of_week);
+  const d = new Date(base);
+  d.setDate(d.getDate() + rule.weeks_ahead * 7);
+  return d.toISOString().slice(0,10);
+}
+
+// ════════════════════════════════════════════
+// SUPABASE OPERATIONS
+// ════════════════════════════════════════════
+async function fetchTasks() {
+  const { data, error } = await sb.from('tasks').select('*').order('created_at', {ascending: false});
+  if (error) throw error;
+  tasks = data || [];
+}
+
+async function fetchRules() {
+  const { data, error } = await sb.from('recurring_rules').select('*').order('created_at', {ascending: false});
+  if (error) throw error;
+  rules = data || [];
+}
+
+async function insertTask(t) {
+  const { data, error } = await sb.from('tasks').insert([t]).select().single();
+  if (error) throw error;
+  tasks.unshift(data);
+}
+
+async function updateTask(id, updates) {
+  const { error } = await sb.from('tasks').update(updates).eq('id', id);
+  if (error) throw error;
+  const i = tasks.findIndex(t => t.id === id);
+  if (i >= 0) Object.assign(tasks[i], updates);
+}
+
+async function deleteTaskById(id) {
+  const { error } = await sb.from('tasks').delete().eq('id', id);
+  if (error) throw error;
+  tasks = tasks.filter(t => t.id !== id);
+}
+
+async function insertRule(r) {
+  const { data, error } = await sb.from('recurring_rules').insert([r]).select().single();
+  if (error) throw error;
+  rules.unshift(data);
+}
+
+async function updateRule(id, updates) {
+  const { error } = await sb.from('recurring_rules').update(updates).eq('id', id);
+  if (error) throw error;
+  const i = rules.findIndex(r => r.id === id);
+  if (i >= 0) Object.assign(rules[i], updates);
+}
+
+async function deleteRuleById(id) {
+  const { error } = await sb.from('recurring_rules').delete().eq('id', id);
+  if (error) throw error;
+  rules = rules.filter(r => r.id !== id);
+}
+
+// ════════════════════════════════════════════
+// AUTO-GENERATE RECURRING TASKS
+// ════════════════════════════════════════════
+async function autoGenerateRecurring() {
+  if (!rules.length) return;
+  const today = new Date();
+  // Determine the start of this week (Mon)
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  weekStart.setHours(0,0,0,0);
+
+  // For each active rule, check if a task already exists this week with matching rule_id
+  // We use a marker in the note field: [rule:<id>:<YYYY-WW>]
+  const weekId = getWeekId(today);
+
+  const toCreate = [];
+  for (const rule of rules) {
+    if (!rule.active) continue;
+    const marker = `[rule:${rule.id}:${weekId}]`;
+    // Check if already exists
+    const exists = tasks.some(t => t.note && t.note.includes(marker));
+    if (!exists) {
+      // Find next occurrence of rule.day_of_week from start of week
+      const deadline = getDeadlineForRule(rule, weekStart.toISOString().slice(0,10));
+      toCreate.push({
+        title: rule.title,
+        subject: rule.subject || null,
+        deadline,
+        deadline_time: rule.deadline_time || null,
+        note: (rule.note ? rule.note + '\n' : '') + marker,
+        done: false,
+      });
+    }
+  }
+
+  for (const t of toCreate) {
+    try {
+      const { data, error } = await sb.from('tasks').insert([t]).select().single();
+      if (!error) tasks.unshift(data);
+    } catch {}
+  }
+}
+
+function getWeekId(date) {
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+  const week1 = new Date(d.getFullYear(), 0, 4);
+  const weekNum = 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  return `${d.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function filteredTasks() {
+  const q = (document.getElementById('search-input')?.value || '').toLowerCase();
+  let list = tasks.filter(t => {
+    if (q && !t.title.toLowerCase().includes(q) && !(t.subject||'').toLowerCase().includes(q)) return false;
+    if (currentFilter === 'active') return !t.done;
+    if (currentFilter === 'done') return t.done;
+    if (currentFilter === 'overdue') return !t.done && deadlineStatus(t) === 'overdue';
+    if (currentFilter === 'today') return !t.done && deadlineStatus(t) === 'today';
+    return true;
+  });
+  list = [...list].sort((a, b) => {
+    if (currentSort === 'deadline') {
+      if (!a.deadline && !b.deadline) return 0;
+      if (!a.deadline) return 1;
+      if (!b.deadline) return -1;
+      return a.deadline.localeCompare(b.deadline);
+    }
+    return new Date(b.created_at) - new Date(a.created_at);
+  });
+  return list;
+}
+
+function isRecurringTask(t) {
+  return t.note && /\[rule:[^\]]+\]/.test(t.note);
+}
+
+function displayNote(t) {
+  if (!t.note) return '';
+  return t.note.replace(/\[rule:[^\]]+\]/g, '').trim();
+}
+
+function renderTasks() {
+  const list = filteredTasks();
+  const el = document.getElementById('task-list');
+  if (!el) return;
+  if (list.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>課題が見つかりません</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(t => {
+    const dl = deadlineBadge(t);
+    const dls = deadlineStatus(t);
+    const note = displayNote(t);
+    const recurring = isRecurringTask(t);
+    return `<div class="task-card dl-${dls} ${t.done?'done':''}">
+      <div class="task-check ${t.done?'checked':''}" onclick="toggleDone('${t.id}')"></div>
+      <div class="task-body">
+        <div class="task-title">${esc(t.title)}</div>
+        <div class="task-meta">
+          ${t.subject ? `<span class="tag-sub">${esc(t.subject)}</span>` : ''}
+          <span class="dl-badge ${dl.cls}">${dl.text}</span>
+          ${recurring ? `<span class="recurring-tag">🔁 定期</span>` : ''}
+        </div>
+        ${note ? `<div class="task-note">${esc(note)}</div>` : ''}
+      </div>
+      <div class="task-actions">
+        <button class="icon-btn" title="編集" onclick="editTask('${t.id}')">✏️</button>
+        <button class="icon-btn del" title="削除" onclick="deleteTask('${t.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCountdown() {
+  const upcoming = tasks
+    .filter(t => !t.done && t.deadline && deadlineStatus(t) !== 'overdue')
+    .sort((a,b) => a.deadline.localeCompare(b.deadline))
+    .slice(0, 10);
+  const sec = document.getElementById('cd-section');
+  const strip = document.getElementById('countdown-strip');
+  if (!sec || !strip) return;
+  if (!upcoming.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  strip.innerHTML = upcoming.map(t => {
+    const d = daysUntil(t.deadline);
+    const s = deadlineStatus(t);
+    const cls = s === 'today' ? 'cd-today' : s === 'soon' ? 'cd-soon' : 'cd-ok';
+    return `<div class="cd-card ${cls}">
+      <div class="cdt">${esc(t.title)}</div>
+      <div class="cdn">${d === 0 ? '今日' : d}</div>
+      <div class="cdl">${d > 0 ? '日後' : ''} ${t.subject ? '— ' + esc(t.subject) : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  const total = tasks.length;
+  const active = tasks.filter(t=>!t.done).length;
+  const overdue = tasks.filter(t=>!t.done && deadlineStatus(t)==='overdue').length;
+  const today = tasks.filter(t=>!t.done && deadlineStatus(t)==='today').length;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-active').textContent = active;
+  document.getElementById('s-overdue').textContent = overdue;
+  document.getElementById('s-today').textContent = today;
+}
+
+function renderRules() {
+  const el = document.getElementById('rule-list');
+  if (!el) return;
+  if (!rules.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🔁</div><p>定期課題ルールがありません<br>課題追加時に「毎週繰り返し」を設定してください</p></div>`;
+    return;
+  }
+  el.innerHTML = rules.map(r => {
+    return `<div class="rule-card ${r.active?'':'inactive'}">
+      <div class="rule-body">
+        <div class="rule-title">${esc(r.title)}</div>
+        <div class="rule-meta">
+          ${r.subject ? `<span class="tag-sub">${esc(r.subject)}</span>` : ''}
+          <span class="day-badge">毎週${DAY_NAMES[r.day_of_week]}曜日</span>
+          <span class="weeks-badge">${r.weeks_ahead === 0 ? '同週締切' : r.weeks_ahead + '週間後締切'}</span>
+          ${r.deadline_time ? `<span class="dl-badge none">${r.deadline_time.slice(0,5)}</span>` : ''}
+        </div>
+        ${r.note ? `<div class="task-note">${esc(r.note)}</div>` : ''}
+      </div>
+      <div class="task-actions">
+        <div class="toggle-btn ${r.active?'on':''}" title="${r.active?'無効化':'有効化'}" onclick="toggleRule('${r.id}')"></div>
+        <button class="icon-btn del" title="削除" onclick="deleteRule('${r.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function render() {
+  renderStats();
+  renderCountdown();
+  renderTasks();
+  renderRules();
+}
+
+// ════════════════════════════════════════════
+// ACTIONS
+// ════════════════════════════════════════════
+async function toggleDone(id) {
+  const t = tasks.find(x=>x.id===id);
+  if (!t) return;
+  try {
+    await updateTask(id, { done: !t.done });
+    render();
+  } catch(e) { showToast('エラー: ' + e.message, true); }
+}
+
+async function deleteTask(id) {
+  if (!confirm('この課題を削除しますか？')) return;
+  try {
+    await deleteTaskById(id);
+    render();
+    showToast('削除しました');
+  } catch(e) { showToast('エラー: ' + e.message, true); }
+}
+
+async function toggleRule(id) {
+  const r = rules.find(x=>x.id===id);
+  if (!r) return;
+  try {
+    await updateRule(id, { active: !r.active });
+    renderRules();
+  } catch(e) { showToast('エラー: ' + e.message, true); }
+}
+
+async function deleteRule(id) {
+  if (!confirm('このルールを削除しますか？今後この課題は自動追加されません。')) return;
+  try {
+    await deleteRuleById(id);
+    renderRules();
+    showToast('ルールを削除しました');
+  } catch(e) { showToast('エラー: ' + e.message, true); }
+}
+
+// ════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════
+function openModal(id) {
+  editId = id || null;
+  const m = document.getElementById('modal');
+  if (id) {
+    const t = tasks.find(x=>x.id===id);
+    document.getElementById('modal-title').textContent = '課題を編集';
+    document.getElementById('f-title').value = t.title;
+    document.getElementById('f-subject').value = t.subject || '';
+    document.getElementById('f-deadline').value = t.deadline || '';
+    document.getElementById('f-time').value = t.deadline_time ? t.deadline_time.slice(0,5) : '';
+    document.getElementById('f-note').value = displayNote(t);
+    // disable recurring in edit mode
+    document.getElementById('recurring-section').style.display = 'none';
+  } else {
+    document.getElementById('modal-title').textContent = '課題を追加';
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-subject').value = '';
+    document.getElementById('f-deadline').value = '';
+    document.getElementById('f-time').value = '';
+    document.getElementById('f-note').value = '';
+    document.getElementById('recurring-section').style.display = '';
+    // reset recurring toggle
+    isRecurring = false;
+    document.getElementById('recurring-toggle').className = 'toggle-btn';
+    document.getElementById('recurring-fields').className = 'recurring-fields';
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('sel'));
+    document.getElementById('f-weeks-ahead').value = '1';
+  }
+  m.classList.add('open');
+  setTimeout(() => document.getElementById('f-title').focus(), 150);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  editId = null;
+}
+
+function toggleRecurring() {
+  isRecurring = !isRecurring;
+  document.getElementById('recurring-toggle').className = 'toggle-btn' + (isRecurring ? ' on' : '');
+  document.getElementById('recurring-fields').className = 'recurring-fields' + (isRecurring ? ' show' : '');
+}
+
+document.querySelectorAll('.day-btn').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('sel'));
+});
+
+async function saveTask() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { document.getElementById('f-title').focus(); return; }
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  try {
+    if (isRecurring && !editId) {
+      // Save as recurring rule(s) - one per selected day
+      const days = [...document.querySelectorAll('.day-btn.sel')].map(b => parseInt(b.dataset.day));
+      if (!days.length) { showToast('曜日を選択してください', true); btn.disabled=false; btn.textContent='保存'; return; }
+      const weeksAhead = parseInt(document.getElementById('f-weeks-ahead').value);
+      const subject = document.getElementById('f-subject').value.trim() || null;
+      const time = document.getElementById('f-time').value || null;
+      const note = document.getElementById('f-note').value.trim() || null;
+
+      for (const day of days) {
+        await insertRule({
+          title, subject,
+          day_of_week: day,
+          deadline_time: time,
+          weeks_ahead: weeksAhead,
+          note,
+          active: true,
+        });
+      }
+      // Immediately generate this week
+      await autoGenerateRecurring();
+      render();
+      showToast('定期課題ルールを追加しました');
+    } else {
+      // Normal task
+      const data = {
+        title,
+        subject: document.getElementById('f-subject').value.trim() || null,
+        deadline: document.getElementById('f-deadline').value || null,
+        deadline_time: document.getElementById('f-time').value || null,
+        note: document.getElementById('f-note').value.trim() || null,
+        done: false,
+      };
+      if (editId) {
+        await updateTask(editId, data);
+        showToast('更新しました');
+      } else {
+        await insertTask(data);
+        showToast('課題を追加しました');
+      }
+      render();
+    }
+    closeModal();
+  } catch(e) {
+    showToast('エラー: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '保存';
+  }
+}
+
+function editTask(id) { openModal(id); }
+
+// ════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('[data-filt]').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  const labels = { all:'課題一覧', active:'未完了の課題', done:'完了済みの課題', overdue:'期限切れ', today:'今日締切' };
+  document.getElementById('list-label').textContent = labels[f] || '課題一覧';
+  renderTasks();
+}
+
+function setSort(s, el) {
+  currentSort = s;
+  document.querySelectorAll('#sort-dl, #sort-cr').forEach(x => x.classList.remove('active'));
+  el.classList.add('active');
+  renderTasks();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('pane-tasks').style.display = tab === 'tasks' ? '' : 'none';
+  document.getElementById('pane-recurring').style.display = tab === 'recurring' ? '' : 'none';
+  document.getElementById('tab-tasks').className = 'tab-btn' + (tab==='tasks' ? ' active' : '');
+  document.getElementById('tab-recurring').className = 'tab-btn' + (tab==='recurring' ? ' active' : '');
+  document.getElementById('add-btn').textContent = tab === 'tasks' ? '＋ 追加' : '＋ 追加';
+  document.getElementById('stats-strip').style.display = tab === 'tasks' ? '' : 'none';
+}
+
+let toastTimer;
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = 'toast', 2800);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) openModal();
+  if (e.key === 'Escape') closeModal();
+});
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function init() {
+  const cfg = loadConfig();
+  if (!cfg) return; // show setup screen
+
+  try {
+    sb = supabase.createClient(cfg.url, cfg.key);
+    document.getElementById('setup-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('app').style.flexDirection = 'column';
+    document.getElementById('conn-url').textContent = cfg.url.replace('https://','').split('.')[0] + '.supabase.co';
+
+    await Promise.all([fetchTasks(), fetchRules()]);
+    await autoGenerateRecurring();
+    render();
+  } catch(e) {
+    document.getElementById('setup-err').textContent = '接続エラー: ' + e.message;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
