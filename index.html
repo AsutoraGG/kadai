@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>課題管理</title>
+<title>大学課題管理システム</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -32,17 +32,22 @@
   --yellow-dim: rgba(201,168,58,0.1);
   --green: #3ab87e;
   --green-dim: rgba(58,184,126,0.1);
+  --blue: #569cd6;
+  --purple: #c586c0;
+  --gray: #8b949e;
   --r: 8px;
   --rl: 12px;
   --rxl: 16px;
+  --font-primary: 'Noto Sans JP', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
 }
-html { font-size: 15px; }
+html { font-size: 16px; }
 body {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: var(--font-primary);
   background: var(--bg0);
   color: var(--text0);
   min-height: 100vh;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 /* ── Setup screen ── */
@@ -51,45 +56,46 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 32px;
+  padding: 24px;
 }
 .setup-card {
   background: var(--bg1);
   border: 1px solid var(--line2);
   border-radius: var(--rxl);
-  padding: 40px;
-  width: 480px;
+  padding: 32px;
+  width: 500px;
   max-width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
-.setup-card h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-.setup-card .sub { color: var(--text1); font-size: 13.5px; margin-bottom: 28px; line-height: 1.5; }
+.setup-card h1 { font-size: 24px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.setup-card .sub { color: var(--text1); font-size: 15px; margin-bottom: 24px; line-height: 1.6; }
 .setup-steps { counter-reset: step; }
 .setup-step {
   display: flex;
-  gap: 14px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
   align-items: flex-start;
 }
 .step-num {
   flex-shrink: 0;
-  width: 24px; height: 24px;
+  width: 28px; height: 28px;
   background: var(--accent-glow);
   color: var(--accent);
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700;
-  font-family: 'DM Mono', monospace;
+  font-size: 12px; font-weight: 700;
+  font-family: var(--font-mono);
 }
 .step-body { flex: 1; }
-.step-label { font-size: 13px; font-weight: 600; color: var(--text0); margin-bottom: 6px; }
-.step-desc { font-size: 12px; color: var(--text1); line-height: 1.5; }
+.step-label { font-size: 14px; font-weight: 600; color: var(--text0); margin-bottom: 4px; }
+.step-desc { font-size: 13px; color: var(--text1); line-height: 1.6; }
 .step-desc a { color: var(--accent); text-decoration: none; }
 .step-desc code {
   background: var(--bg3);
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 4px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--yellow);
 }
 
@@ -100,72 +106,98 @@ body {
 .topbar {
   background: var(--bg1);
   border-bottom: 1px solid var(--line);
-  padding: 0 28px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  height: 56px;
+  gap: 12px;
+  height: 60px;
   position: sticky;
   top: 0;
   z-index: 20;
 }
-.logo { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; margin-right: 8px; }
+.logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 6px; }
 .logo span { color: var(--accent); }
 
-.tab-nav { display: flex; gap: 2px; }
+.tab-nav { display: flex; gap: 4px; }
 .tab-btn {
-  padding: 6px 14px;
+  padding: 8px 16px;
   border: none;
   background: none;
   border-radius: var(--r);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text2);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 .tab-btn:hover { color: var(--text1); background: var(--bg3); }
-.tab-btn.active { background: var(--accent-glow); color: var(--accent); }
+.tab-btn.active {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
 
-.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 
 .search-box {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   background: var(--bg2);
   border: 1px solid var(--line);
   border-radius: var(--r);
-  padding: 6px 11px;
-  width: 200px;
-  transition: border-color 0.15s;
+  padding: 8px 14px;
+  width: 240px;
+  max-width: 100%;
+  transition: all 0.2s ease;
 }
-.search-box:focus-within { border-color: var(--accent); }
+.search-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
 .search-box input {
   background: none; border: none; outline: none;
-  font-family: inherit; font-size: 13px; color: var(--text0); width: 100%;
+  font-family: inherit; font-size: 14px; color: var(--text0); width: 100%;
 }
 .search-box input::placeholder { color: var(--text3); }
 
 .btn-add {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--accent);
   color: #fff;
   border: none;
   border-radius: var(--r);
-  padding: 7px 15px;
+  padding: 8px 18px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
   white-space: nowrap;
 }
-.btn-add:hover { background: var(--accent-dim); }
-.btn-add:active { transform: scale(0.97); }
+.btn-add:hover { background: var(--accent-dim); transform: translateY(-2px); }
+.btn-add:active { transform: translateY(0); }
+.btn-add::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.1);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.btn-add:hover::after { opacity: 1; }
 
 /* ── Stats strip ── */
 .stats-strip {
@@ -173,30 +205,35 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   background: var(--line);
-  border-bottom: 1px solid var(--line);
 }
 .stat-cell {
   background: var(--bg1);
-  padding: 12px 22px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
-.stat-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); }
-.stat-val { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 500; color: var(--text0); }
+.stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text3); }
+.stat-val { font-family: var(--font-mono); font-size: 28px; font-weight: 500; color: var(--text0); line-height: 1; }
 .stat-cell.s-red .stat-val { color: var(--red); }
 .stat-cell.s-orange .stat-val { color: var(--orange); }
+.stat-cell.s-green .stat-val { color: var(--green); }
+.stat-cell.s-blue .stat-val { color: var(--blue); }
 
 /* ── Content ── */
-.content { padding: 24px 28px; max-width: 900px; margin: 0 auto; width: 100%; }
+.content { flex: 1; padding: 24px; max-width: 1000px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; }
 
 /* ── Countdown strip ── */
-.cd-wrap { margin-bottom: 26px; }
+.cd-wrap { margin-bottom: 28px; }
 .section-head {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
 }
-.section-head h2 { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text2); white-space: nowrap; }
+.section-head h2 { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text2); white-space: nowrap; }
 .section-line { flex: 1; height: 1px; background: var(--line); }
 
 .countdown-strip {
-  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+  display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px;
   scrollbar-width: none;
 }
 .countdown-strip::-webkit-scrollbar { display: none; }
@@ -205,104 +242,130 @@ body {
   background: var(--bg2);
   border: 1px solid var(--line);
   border-radius: var(--rl);
-  padding: 12px 16px;
-  min-width: 140px;
-  transition: border-color 0.15s;
+  padding: 16px 20px;
+  min-width: 160px;
+  transition: all 0.2s ease;
+  position: relative;
   cursor: default;
 }
-.cd-card:hover { border-color: var(--line2); }
-.cd-card .cdt { font-size: 11.5px; font-weight: 600; color: var(--text1); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
-.cd-card .cdn { font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; line-height: 1; }
-.cd-card .cdl { font-size: 10px; color: var(--text3); margin-top: 2px; }
+.cd-card:hover { border-color: var(--line2); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+.cd-card .cdt { font-size: 13px; font-weight: 600; color: var(--text1); margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.cd-card .cdn { font-family: var(--font-mono); font-size: 32px; font-weight: 500; line-height: 1; margin-bottom: 4px; }
+.cd-card .cdl { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 6px; }
 .cd-card.cd-today .cdn { color: var(--orange); }
 .cd-card.cd-soon .cdn { color: var(--yellow); }
 .cd-card.cd-ok .cdn { color: var(--green); }
+.cd-card.cd-overdue .cdn { color: var(--red); }
 
 /* ── Sort / filter bar ── */
-.filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.filter-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-label, .sort-label { font-size: 12px; font-weight: 600; color: var(--text2); }
 .chip {
-  padding: 4px 12px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 24px;
   border: 1px solid var(--line2);
   background: none;
   color: var(--text2);
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
-.chip:hover { border-color: var(--accent); color: var(--accent); }
-.chip.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
-.chip-sep { width: 1px; height: 18px; background: var(--line2); }
+.chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+.chip.active { background: var(--accent); color: white; }
+.chip-sep { width: 1px; height: 20px; background: var(--line2); }
 
 /* ── Task list ── */
-.task-list { display: flex; flex-direction: column; gap: 7px; }
+.task-list { display: flex; flex-direction: column; gap: 12px; }
 
 .task-card {
   background: var(--bg1);
   border: 1px solid var(--line);
   border-radius: var(--rl);
-  padding: 14px 18px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+.task-card:hover { border-color: var(--line2); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+.task-card.done { opacity: 0.5; pointer-events: none; }
+
+/* left accent bar */
+.task-card.dl-overdue { border-left: 4px solid var(--red); }
+.task-card.dl-today   { border-left: 4px solid var(--orange); }
+.task-card.dl-soon    { border-left: 4px solid var(--yellow); }
+.task-card.dl-ok      { border-left: 4px solid var(--green); }
+.task-card.dl-none    { border-left: 4px solid var(--line2); }
+
+.task-header {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  transition: border-color 0.15s, transform 0.1s;
-  position: relative;
+  flex: 1;
+  min-width: 0;
 }
-.task-card:hover { border-color: var(--line2); transform: translateY(-1px); }
-.task-card.done { opacity: 0.38; }
-
-/* left accent bar */
-.task-card.dl-overdue { border-left: 2.5px solid var(--red); }
-.task-card.dl-today   { border-left: 2.5px solid var(--orange); }
-.task-card.dl-soon    { border-left: 2.5px solid var(--yellow); }
-.task-card.dl-ok      { border-left: 2.5px solid var(--green); }
-
 .task-check {
-  width: 19px; height: 19px;
-  border: 1.5px solid var(--line2);
-  border-radius: 5px;
+  width: 24px; height: 24px;
+  border: 2px solid var(--line2);
+  border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 4px;
   display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   background: none;
 }
 .task-check:hover { border-color: var(--green); }
 .task-check.checked { background: var(--green); border-color: var(--green); }
 .task-check.checked::after {
   content: '';
-  width: 9px; height: 5px;
+  width: 12px; height: 6px;
   border-left: 2px solid #fff;
   border-bottom: 2px solid #fff;
-  transform: rotate(-45deg) translateY(-1px);
+  transform: rotate(-45deg) translateY(-2px);
 }
 
-.task-body { flex: 1; min-width: 0; }
+.task-info {
+  flex: 1;
+  min-width: 0;
+}
 .task-title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text0);
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .task-card.done .task-title { text-decoration: line-through; color: var(--text3); }
 
-.task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.tag-sub {
-  font-size: 11px; font-weight: 600;
-  padding: 1px 8px;
-  border-radius: 20px;
-  background: var(--bg3);
-  color: var(--text1);
-}
-.dl-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-family: 'DM Mono', monospace;
-  font-size: 11px; font-weight: 500;
+.task-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.task-tag {
+  font-size: 12px;
+  font-weight: 500;
   padding: 2px 8px;
+  border-radius: 12px;
+}
+.tag-subject { background: var(--bg3); color: var(--text1); }
+.tag-priority-high { background: var(--red-dim); color: var(--red); }
+.tag-priority-medium { background: var(--orange-dim); color: var(--orange); }
+.tag-priority-low { background: var(--yellow-dim); color: var(--yellow); }
+.tag-type { background: var(--accent-glow); color: var(--accent); }
+
+.dl-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500;
+  padding: 4px 10px;
   border-radius: var(--r);
 }
 .dl-badge.overdue { background: var(--red-dim); color: var(--red); }
@@ -312,230 +375,303 @@ body {
 .dl-badge.none    { background: var(--bg3); color: var(--text3); }
 
 .recurring-tag {
-  font-size: 10.5px; font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
   background: var(--accent-glow);
   color: var(--accent);
 }
 
-.task-note { margin-top: 5px; font-size: 12px; color: var(--text2); line-height: 1.5; }
+.task-notes { margin-top: 8px; font-size: 13px; color: var(--text2); line-height: 1.6; }
+.task-notes.empty { color: var(--text3); font-style: italic; }
 
-.task-actions { display: flex; gap: 3px; flex-shrink: 0; }
+.task-actions { display: flex; gap: 8px; flex-shrink: 0; margin-top: auto; }
 .icon-btn {
-  width: 27px; height: 27px;
+  width: 32px; height: 32px;
   border: none; background: none;
   border-radius: var(--r);
   cursor: pointer;
   color: var(--text3);
   display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  transition: all 0.15s;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
 .icon-btn:hover { background: var(--bg3); color: var(--text1); }
+.icon-btn:hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.1);
+  opacity: 0.5;
+}
 .icon-btn.del:hover { background: var(--red-dim); color: var(--red); }
+.icon-btn.edit:hover { background: var(--blue-dim); color: var(--blue); }
 
 /* ── Empty ── */
-.empty { display: flex; flex-direction: column; align-items: center; padding: 64px 32px; gap: 10px; color: var(--text3); text-align: center; }
-.empty-icon { font-size: 44px; opacity: 0.35; }
-.empty p { font-size: 13px; }
+.empty { display: flex; flex-direction: column; align-items: center; padding: 48px 32px; gap: 16px; color: var(--text3); text-align: center; }
+.empty-icon { font-size: 48px; opacity: 0.4; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.empty p { font-size: 15px; line-height: 1.6; max-width: 400px; }
+.empty p:first-of-type { font-weight: 600; margin-bottom: 8px; color: var(--text2); }
 
 /* ── Recurring rules tab ── */
-.rule-list { display: flex; flex-direction: column; gap: 8px; }
+.rule-list { display: flex; flex-direction: column; gap: 12px; }
 .rule-card {
   background: var(--bg1);
   border: 1px solid var(--line);
   border-radius: var(--rl);
-  padding: 14px 18px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
-  gap: 14px;
-  transition: border-color 0.15s;
+  gap: 16px;
+  transition: all 0.2s ease;
 }
-.rule-card:hover { border-color: var(--line2); }
-.rule-card.inactive { opacity: 0.4; }
+.rule-card:hover { border-color: var(--line2); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.rule-card.inactive { opacity: 0.5; }
 .rule-body { flex: 1; min-width: 0; }
-.rule-title { font-size: 14px; font-weight: 600; color: var(--text0); margin-bottom: 5px; }
-.rule-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rule-title { font-size: 16px; font-weight: 600; color: var(--text0); margin-bottom: 8px; }
+.rule-meta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
 .day-badge {
-  font-family: 'DM Mono', monospace;
-  font-size: 11px; font-weight: 500;
-  padding: 2px 9px;
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500;
+  padding: 4px 10px;
   border-radius: var(--r);
   background: var(--accent-glow);
   color: var(--accent);
 }
 .weeks-badge {
-  font-size: 11px; font-weight: 600;
-  padding: 2px 8px;
+  font-size: 12px; font-weight: 500;
+  padding: 4px 10px;
   border-radius: 20px;
   background: var(--bg3);
   color: var(--text1);
 }
+.time-badge {
+  font-family: var(--font-mono);
+  font-size: 12px; font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--r);
+  background: var(--bg3);
+  color: var(--text1);
+}
 .toggle-btn {
-  width: 36px; height: 20px;
+  width: 40px; height: 24px;
   background: var(--bg4);
   border: 1px solid var(--line2);
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   position: relative;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
   flex-shrink: 0;
 }
 .toggle-btn::after {
   content: '';
   position: absolute;
-  width: 14px; height: 14px;
+  width: 16px; height: 16px;
   background: var(--text2);
   border-radius: 50%;
-  top: 2px; left: 2px;
-  transition: all 0.2s;
+  top: 4px; left: 4px;
+  transition: all 0.3s ease;
 }
 .toggle-btn.on { background: var(--accent); border-color: var(--accent); }
-.toggle-btn.on::after { left: 18px; background: #fff; }
+.toggle-btn.on::after { left: 20px; background: #fff; }
 
 /* ── Modal ── */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75);
+  background: rgba(0,0,0,0.5);
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
   opacity: 0; pointer-events: none;
-  transition: opacity 0.2s;
-  backdrop-filter: blur(6px);
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(8px);
 }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .modal {
   background: var(--bg1);
   border: 1px solid var(--line2);
   border-radius: var(--rxl);
-  padding: 26px;
-  width: 480px;
+  padding: 28px;
+  width: 500px;
   max-width: 92vw;
   max-height: 92vh;
   overflow-y: auto;
-  transform: scale(0.95) translateY(8px);
-  transition: transform 0.2s;
+  transform: scale(0.95) translateY(12px);
+  transition: transform 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
 }
 .modal-overlay.open .modal { transform: scale(1) translateY(0); }
 
-.modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-.modal-hd h2 { font-size: 16px; font-weight: 700; }
+.modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.modal-hd h2 { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
 
 .form-label {
   display: block;
-  font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
   color: var(--text2);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .form-input, .form-select, .form-textarea {
   width: 100%;
   background: var(--bg2);
   border: 1px solid var(--line2);
   border-radius: var(--r);
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14px;
   color: var(--text0);
   outline: none;
-  transition: border-color 0.15s;
+  transition: all 0.2s ease;
   margin-bottom: 16px;
 }
-.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+.form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
 .form-select option { background: var(--bg2); }
-.form-textarea { min-height: 72px; resize: vertical; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-textarea { min-height: 96px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-row .form-input, .form-row .form-select { margin-bottom: 0; }
 
 /* recurring section in modal */
 .recurring-section {
   border: 1px solid var(--line);
   border-radius: var(--rl);
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
   background: var(--bg2);
 }
 .recurring-toggle-row {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 0;
 }
-.recurring-toggle-row label { font-size: 13.5px; font-weight: 600; color: var(--text0); cursor: pointer; }
-.recurring-fields { margin-top: 16px; display: none; }
+.recurring-toggle-row label { font-size: 14px; font-weight: 600; color: var(--text0); cursor: pointer; }
+.recurring-fields { margin-top: 20px; display: none; }
 .recurring-fields.show { display: block; }
 
 .days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 .day-btn {
   aspect-ratio: 1;
   border: 1px solid var(--line2);
   background: none;
   border-radius: var(--r);
-  font-family: 'DM Mono', monospace;
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   font-weight: 500;
   color: var(--text2);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
 }
-.day-btn:hover { border-color: var(--accent); color: var(--accent); }
-.day-btn.sel { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+.day-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+.day-btn.sel { background: var(--accent); border-color: var(--accent); color: white; }
 
-.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.recurring-options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.recurring-options label {
+  font-size: 13px;
+  color: var(--text1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.recurring-options input[type="number"] {
+  width: 60px;
+  padding: 6px 10px;
+  background: var(--bg2);
+  border: 1px solid var(--line2);
+  border-radius: var(--r);
+  color: var(--text0);
+  font-family: inherit;
+}
+
+.recurring-help {
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 12px;
+  line-height: 1.6;
+  padding: 12px;
+  background: var(--bg3);
+  border-radius: var(--r);
+  border-left: 3px solid var(--accent);
+}
+
+.modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
 .btn-cancel {
   background: none; border: 1px solid var(--line2); border-radius: var(--r);
-  padding: 8px 18px; font-family: inherit; font-size: 13.5px; font-weight: 600;
-  color: var(--text2); cursor: pointer; transition: all 0.15s;
+  padding: 10px 20px; font-family: inherit; font-size: 14px; font-weight: 600;
+  color: var(--text2); cursor: pointer; transition: all 0.2s ease;
 }
 .btn-cancel:hover { background: var(--bg3); color: var(--text1); }
 .btn-save {
   background: var(--accent); border: none; border-radius: var(--r);
-  padding: 8px 22px; font-family: inherit; font-size: 13.5px; font-weight: 700;
-  color: #fff; cursor: pointer; transition: background 0.15s;
+  padding: 10px 24px; font-family: inherit; font-size: 14px; font-weight: 700;
+  color: #fff; cursor: pointer; transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
 }
-.btn-save:hover { background: var(--accent-dim); }
-.btn-save:disabled { opacity: 0.5; cursor: default; }
+.btn-save:hover { background: var(--accent-dim); transform: translateY(-2px); }
+.btn-save:active { transform: translateY(0); }
+.btn-save:disabled { opacity: 0.6; cursor: default; }
 
 /* ── Toast ── */
 .toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px);
   background: var(--bg3); border: 1px solid var(--line2);
-  border-radius: var(--rl); padding: 10px 20px;
-  font-size: 13px; font-weight: 600; color: var(--text0);
-  transition: transform 0.3s; z-index: 200; white-space: nowrap;
+  border-radius: var(--rl); padding: 12px 24px;
+  font-size: 14px; font-weight: 600; color: var(--text0);
+  transition: all 0.3s ease; z-index: 200; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 .toast.show { transform: translateX(-50%) translateY(0); }
-.toast.err { border-color: var(--red); color: var(--red); }
+.toast.err { border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
 /* ── Spinner ── */
-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--line2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.loading-state { display: flex; align-items: center; justify-content: center; padding: 60px; gap: 12px; color: var(--text2); }
+.loading-state { display: flex; align-items: center; justify-content: center; padding: 32px; gap: 16px; color: var(--text2); }
 
 /* ── Settings bar ── */
 .settings-bar {
   background: var(--bg2);
   border-bottom: 1px solid var(--line);
-  padding: 8px 28px;
+  padding: 12px 24px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 12px;
+  gap: 12px;
+  font-size: 13px;
   color: var(--text2);
 }
 .settings-bar a { color: var(--accent); text-decoration: none; font-weight: 600; }
 
-@media (max-width: 640px) {
-  .stats-strip { grid-template-columns: 1fr 1fr; }
+@media (max-width: 768px) {
+  .stats-strip { grid-template-columns: 1fr 1fr; gap: 0; }
   .content { padding: 16px; }
   .topbar { padding: 0 16px; }
-  .search-box { display: none; }
-  .topbar-right { gap: 6px; }
+  .search-box { width: 100%; }
+  .topbar-right { gap: 8px; }
+  .filter-bar { justify-content: center; }
+  .modal { width: 90vw; max-height: 90vh; padding: 20px; }
   .form-row { grid-template-columns: 1fr; }
-  .days-grid { grid-template-columns: repeat(7, 1fr); }
+  .recurring-options { flex-direction: column; align-items: stretch; }
+  .days-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .stats-strip { grid-template-columns: 1fr; }
+  .task-card { flex-direction: column; }
+  .task-actions { margin-top: 16px; align-self: flex-end; }
+  .rule-card { flex-direction: column; align-items: stretch; }
+  .rule-actions { margin-top: 16px; align-self: flex-end; }
 }
 </style>
 </head>
@@ -543,11 +679,11 @@ body {
 
 <!-- ═══════════════════════════════════════════════════
      SETUP SCREEN (shown if no config saved)
-════════════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div id="setup-screen">
   <div class="setup-card">
-    <h1>🎓 課題管理アプリ</h1>
-    <p class="sub">Supabaseを使ってクラウドに課題を保存します。複数PCからアクセスできます。<br>初回のみ以下の設定が必要です。</p>
+    <h1>🎓 大学課題管理システム</h1>
+    <p class="sub">Supabaseを使ってクラウドに課題を保存します。複数デバイスからアクセスできます。<br>初回のみ以下の設定が必要です。</p>
     <div class="setup-steps">
       <div class="setup-step">
         <div class="step-num">1</div>
@@ -572,13 +708,13 @@ body {
       </div>
     </div>
 
-    <div style="margin-top: 8px;">
+    <div style="margin-top: 12px;">
       <label class="form-label">Supabase Project URL</label>
-      <input class="form-input" id="cfg-url" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co" style="margin-bottom:12px;">
+      <input class="form-input" id="cfg-url" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co">
       <label class="form-label">anon public key</label>
       <input class="form-input" id="cfg-key" type="text" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-      <button class="btn-save" style="width:100%;margin-top:4px;" onclick="setupConnect()">接続して開始</button>
-      <div id="setup-err" style="color:var(--red);font-size:12px;margin-top:8px;min-height:16px;"></div>
+      <button class="btn-save" style="width:100%;margin-top:12px;" onclick="setupConnect()">接続して開始</button>
+      <div id="setup-err" style="color:var(--red);font-size:13px;margin-top:12px;min-height:20px;"></div>
     </div>
   </div>
 </div>
@@ -589,17 +725,17 @@ body {
 <div id="app">
   <!-- Topbar -->
   <header class="topbar">
-    <div class="logo">課題<span>管理</span></div>
+    <div class="logo">大学課題<span>管理</span></div>
     <nav class="tab-nav">
-      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">📋 課題</button>
+      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">📋 課題一覧</button>
       <button class="tab-btn" id="tab-recurring" onclick="switchTab('recurring')">🔁 定期課題</button>
     </nav>
     <div class="topbar-right">
       <div class="search-box">
-        <span style="color:var(--text3);font-size:13px;">🔍</span>
-        <input type="text" id="search-input" placeholder="検索..." oninput="renderTasks()">
+        <span style="color:var(--text3);font-size:14px;">🔍</span>
+        <input type="text" id="search-input" placeholder="課題を検索..." oninput="renderTasks()">
       </div>
-      <button class="btn-add" id="add-btn" onclick="openModal()">＋ 追加</button>
+      <button class="btn-add" id="add-btn" onclick="openModal()">＋ 課題を追加</button>
     </div>
   </header>
 
@@ -614,7 +750,7 @@ body {
   <!-- Settings info bar -->
   <div class="settings-bar" id="settings-bar">
     <span>🔗 接続済み</span>
-    <span id="conn-url" style="font-family:'DM Mono',monospace;font-size:11px;"></span>
+    <span id="conn-url" style="font-family:'DM Mono',monospace;font-size:12px;"></span>
     <a href="#" onclick="resetConfig();return false;" style="margin-left:auto;">接続設定を変更</a>
   </div>
 
@@ -633,16 +769,18 @@ body {
 
       <!-- Filter / sort bar -->
       <div class="filter-bar">
-        <span style="font-size:11px;color:var(--text3);font-weight:700;">フィルター</span>
+        <span class="filter-label">フィルター</span>
         <button class="chip active" data-filt="all" onclick="setFilter('all',this)">すべて</button>
         <button class="chip" data-filt="active" onclick="setFilter('active',this)">未完了</button>
+        <button class="chip" data-filt="done" onclick="setFilter('done',this)">完了済み</button>
         <button class="chip" data-filt="overdue" onclick="setFilter('overdue',this)">期限切れ</button>
         <button class="chip" data-filt="today" onclick="setFilter('today',this)">今日</button>
-        <button class="chip" data-filt="done" onclick="setFilter('done',this)">完了済み</button>
+        <button class="chip" data-filt="soon" onclick="setFilter('soon',this)">近日</button>
         <div class="chip-sep"></div>
-        <span style="font-size:11px;color:var(--text3);font-weight:700;">並び替え</span>
+        <span class="sort-label">並び替え</span>
         <button class="chip active" id="sort-dl" onclick="setSort('deadline',this)">締切順</button>
         <button class="chip" id="sort-cr" onclick="setSort('created',this)">追加順</button>
+        <button class="chip" id="sort-pri" onclick="setSort('priority',this)">優先度順</button>
       </div>
 
       <div class="section-head">
@@ -660,7 +798,7 @@ body {
         <h2>🔁 定期課題ルール</h2>
         <div class="section-line"></div>
       </div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.6;">
+      <p style="font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6;">
         毎週指定した曜日に課題を自動生成します。ページを開いたタイミングで当週分が未生成なら自動追加されます。
       </p>
       <div class="rule-list" id="rule-list">
@@ -672,7 +810,7 @@ body {
 
 <!-- ═══════════════════════════════════════════════════
      MODAL
-════════════════════════════════════════════════════ -->
+═══════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-hd">
@@ -681,10 +819,24 @@ body {
     </div>
 
     <label class="form-label">課題名 *</label>
-    <input class="form-input" id="f-title" type="text" placeholder="例：数学 第3章 レポート">
+    <input class="form-input" id="f-title" type="text" placeholder="例：線形代数 第3章 レポート">
 
     <label class="form-label">科目</label>
-    <input class="form-input" id="f-subject" type="text" placeholder="例：数学">
+    <input class="form-input" id="f-subject" type="text" placeholder="例：線形代数">
+
+    <label class="form-label">課題タイプ</label>
+    <select class="form-select" id="f-type">
+      <option value="">選択してください</option>
+      <option value="homework">宿題</option>
+      <option value="assignment">課題</option>
+      <option value="project">プロジェクト</option>
+      <option value="exam">試験</option>
+      <option value="quiz">小テスト</option>
+      <option value="reading">読書</option>
+      <option value="presentation">発表</option>
+      <option value="lab">実験</option>
+      <option value="other">その他</option>
+    </select>
 
     <div class="form-row" style="margin-bottom:16px;">
       <div>
@@ -697,8 +849,24 @@ body {
       </div>
     </div>
 
-    <label class="form-label">メモ</label>
-    <textarea class="form-textarea" id="f-note" placeholder="補足・提出場所など…"></textarea>
+    <label class="form-label">優先度</label>
+    <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="radio" name="priority" value="low" id="priority-low">
+        <span>低</span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="radio" name="priority" value="medium" id="priority-medium" checked>
+        <span>中</span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="radio" name="priority" value="high" id="priority-high">
+        <span>高</span>
+      </label>
+    </div>
+
+    <label class="form-label">メモ・詳細</label>
+    <textarea class="form-textarea" id="f-note" placeholder="補足・提出場所・参考リンクなど…"></textarea>
 
     <!-- 繰り返し設定 -->
     <div class="recurring-section" id="recurring-section">
@@ -719,15 +887,13 @@ body {
             <button type="button" class="day-btn" data-day="6">土</button>
           </div>
         </div>
-        <div>
-          <label class="form-label">締切は何週間後の上記曜日？</label>
-          <select class="form-select" id="f-weeks-ahead" style="margin-bottom:0;">
-            <option value="0">同じ週（その日の23:59）</option>
-            <option value="1" selected>1週間後</option>
-            <option value="2">2週間後</option>
-          </select>
+        <div class="recurring-options">
+          <label>
+            <input type="number" id="f-weeks-ahead" min="0" max="4" value="1">
+            週間後の上記曜日を締切に設定
+          </label>
         </div>
-        <p style="font-size:11.5px;color:var(--text2);margin-top:12px;line-height:1.5;">
+        <p class="recurring-help">
           ⚠️ 繰り返しを有効にすると「定期課題ルール」として保存され、毎週自動で課題が追加されます。<br>
           提出期限欄の入力は無視されます。
         </p>
@@ -745,9 +911,9 @@ body {
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // CONFIG
-// ════════════════════════════════════════════
+// ══════════════════════════════════════════
 const CFG_KEY = 'sb_config_v1';
 let sb = null;
 
@@ -780,9 +946,9 @@ async function setupConnect() {
   }
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // STATE
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 let tasks = [];
 let rules = [];
 let currentFilter = 'all';
@@ -791,11 +957,24 @@ let editId = null;
 let isRecurring = false;
 let currentTab = 'tasks';
 
+const PRIORITY_LEVELS = { low: 0, medium: 1, high: 2 };
+const PRIORITY_COLORS = { low: var(--yellow), medium: var(--orange), high: var(--red) };
 const DAY_NAMES = ['日','月','火','水','木','金','土'];
+const TASK_TYPES = {
+  homework: '宿題',
+  assignment: '課題',
+  project: 'プロジェクト',
+  exam: '試験',
+  quiz: '小テスト',
+  reading: '読書',
+  presentation: '発表',
+  lab: '実験',
+  other: 'その他'
+};
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // DATE HELPERS
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function todayStr() { return new Date().toISOString().slice(0,10); }
 
 function deadlineStatus(task) {
@@ -838,9 +1017,9 @@ function getDeadlineForRule(rule, refDate) {
   return d.toISOString().slice(0,10);
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // SUPABASE OPERATIONS
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 async function fetchTasks() {
   const { data, error } = await sb.from('tasks').select('*').order('created_at', {ascending: false});
   if (error) throw error;
@@ -891,9 +1070,9 @@ async function deleteRuleById(id) {
   rules = rules.filter(r => r.id !== id);
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // AUTO-GENERATE RECURRING TASKS
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 async function autoGenerateRecurring() {
   if (!rules.length) return;
   const today = new Date();
@@ -918,6 +1097,8 @@ async function autoGenerateRecurring() {
       toCreate.push({
         title: rule.title,
         subject: rule.subject || null,
+        type: rule.type || null,
+        priority: rule.priority || 'medium',
         deadline,
         deadline_time: rule.deadline_time || null,
         note: (rule.note ? rule.note + '\n' : '') + marker,
@@ -943,19 +1124,22 @@ function getWeekId(date) {
   return `${d.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // RENDER
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function filteredTasks() {
   const q = (document.getElementById('search-input')?.value || '').toLowerCase();
   let list = tasks.filter(t => {
-    if (q && !t.title.toLowerCase().includes(q) && !(t.subject||'').toLowerCase().includes(q)) return false;
+    if (q && !t.title.toLowerCase().includes(q) && !(t.subject||'').toLowerCase().includes(q) && !(t.note||'').toLowerCase().includes(q)) return false;
     if (currentFilter === 'active') return !t.done;
     if (currentFilter === 'done') return t.done;
     if (currentFilter === 'overdue') return !t.done && deadlineStatus(t) === 'overdue';
     if (currentFilter === 'today') return !t.done && deadlineStatus(t) === 'today';
+    if (currentFilter === 'soon') return !t.done && deadlineStatus(t) === 'soon';
     return true;
   });
+
+  // Sorting
   list = [...list].sort((a, b) => {
     if (currentSort === 'deadline') {
       if (!a.deadline && !b.deadline) return 0;
@@ -963,8 +1147,14 @@ function filteredTasks() {
       if (!b.deadline) return -1;
       return a.deadline.localeCompare(b.deadline);
     }
+    if (currentSort === 'priority') {
+      const priA = PRIORITY_LEVELS[a.priority || 'medium'] || 0;
+      const priB = PRIORITY_LEVELS[b.priority || 'medium'] || 0;
+      return priB - priA; // High priority first
+    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
+
   return list;
 }
 
@@ -982,7 +1172,7 @@ function renderTasks() {
   const el = document.getElementById('task-list');
   if (!el) return;
   if (list.length === 0) {
-    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>課題が見つかりません</p></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-icon">📭</div><p>課題が見つかりません</p><p>「＋ 課題を追加」ボタンから新しい課題を作成できます</p></div>`;
     return;
   }
   el.innerHTML = list.map(t => {
@@ -990,19 +1180,23 @@ function renderTasks() {
     const dls = deadlineStatus(t);
     const note = displayNote(t);
     const recurring = isRecurringTask(t);
-    return `<div class="task-card dl-${dls} ${t.done?'done':''}">
+    const priority = t.priority || 'medium';
+    const type = t.type || '';
+    return `<div class="task-card dl-${dls} ${t.done?'done':''}" data-id="${t.id}">
       <div class="task-check ${t.done?'checked':''}" onclick="toggleDone('${t.id}')"></div>
-      <div class="task-body">
+      <div class="task-info">
         <div class="task-title">${esc(t.title)}</div>
         <div class="task-meta">
-          ${t.subject ? `<span class="tag-sub">${esc(t.subject)}</span>` : ''}
+          ${t.subject ? `<span class="task-tag tag-subject">${esc(t.subject)}</span>` : ''}
+          ${type ? `<span class="task-tag tag-type">${TASK_TYPES[type] || type}</span>` : ''}
+          <span class="task-tag tag-priority-${priority}">${priority === 'high' ? '高' : priority === 'medium' ? '中' : '低'}</span>
           <span class="dl-badge ${dl.cls}">${dl.text}</span>
           ${recurring ? `<span class="recurring-tag">🔁 定期</span>` : ''}
         </div>
-        ${note ? `<div class="task-note">${esc(note)}</div>` : ''}
+        ${note ? `<div class="task-notes">${esc(note)}</div>` : '<div class="task-notes empty">メモなし</div>'}
       </div>
       <div class="task-actions">
-        <button class="icon-btn" title="編集" onclick="editTask('${t.id}')">✏️</button>
+        <button class="icon-btn edit" title="編集" onclick="editTask('${t.id}')">✏️</button>
         <button class="icon-btn del" title="削除" onclick="deleteTask('${t.id}')">🗑️</button>
       </div>
     </div>`;
@@ -1013,7 +1207,7 @@ function renderCountdown() {
   const upcoming = tasks
     .filter(t => !t.done && t.deadline && deadlineStatus(t) !== 'overdue')
     .sort((a,b) => a.deadline.localeCompare(b.deadline))
-    .slice(0, 10);
+    .slice(0, 8);
   const sec = document.getElementById('cd-section');
   const strip = document.getElementById('countdown-strip');
   if (!sec || !strip) return;
@@ -1022,11 +1216,17 @@ function renderCountdown() {
   strip.innerHTML = upcoming.map(t => {
     const d = daysUntil(t.deadline);
     const s = deadlineStatus(t);
-    const cls = s === 'today' ? 'cd-today' : s === 'soon' ? 'cd-soon' : 'cd-ok';
+    const cls = s === 'today' ? 'cd-today' : s === 'soon' ? 'cd-soon' : s === 'ok' ? 'cd-ok' : '';
+    const priority = t.priority || 'medium';
+    const priorityDot = `<span style="width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;background:${priority === 'high' ? var(--red) : priority === 'medium' ? var(--orange) : var(--yellow)};"></span>`;
     return `<div class="cd-card ${cls}">
-      <div class="cdt">${esc(t.title)}</div>
+      <div class="cdt">${priorityDot}${esc(t.title)}</div>
       <div class="cdn">${d === 0 ? '今日' : d}</div>
-      <div class="cdl">${d > 0 ? '日後' : ''} ${t.subject ? '— ' + esc(t.subject) : ''}</div>
+      <div class="cdl">
+        ${d > 0 ? '日後' : ''}
+        ${t.subject ? ' — ' + esc(t.subject) : ''}
+        ${t.type ? ' · ' + (TASK_TYPES[t.type] || t.type) : ''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -1054,12 +1254,13 @@ function renderRules() {
       <div class="rule-body">
         <div class="rule-title">${esc(r.title)}</div>
         <div class="rule-meta">
-          ${r.subject ? `<span class="tag-sub">${esc(r.subject)}</span>` : ''}
+          ${r.subject ? `<span class="task-tag tag-subject">${esc(r.subject)}</span>` : ''}
+          ${r.type ? `<span class="task-tag tag-type">${TASK_TYPES[r.type] || r.type}</span>` : ''}
           <span class="day-badge">毎週${DAY_NAMES[r.day_of_week]}曜日</span>
           <span class="weeks-badge">${r.weeks_ahead === 0 ? '同週締切' : r.weeks_ahead + '週間後締切'}</span>
-          ${r.deadline_time ? `<span class="dl-badge none">${r.deadline_time.slice(0,5)}</span>` : ''}
+          ${r.deadline_time ? `<span class="time-badge">${r.deadline_time.slice(0,5)}</span>` : ''}
         </div>
-        ${r.note ? `<div class="task-note">${esc(r.note)}</div>` : ''}
+        ${r.note ? `<div class="task-notes">${esc(r.note)}</div>` : ''}
       </div>
       <div class="task-actions">
         <div class="toggle-btn ${r.active?'on':''}" title="${r.active?'無効化':'有効化'}" onclick="toggleRule('${r.id}')"></div>
@@ -1076,15 +1277,16 @@ function render() {
   renderRules();
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // ACTIONS
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 async function toggleDone(id) {
   const t = tasks.find(x=>x.id===id);
   if (!t) return;
   try {
     await updateTask(id, { done: !t.done });
     render();
+    showToast(t.done ? '課題を未完了に戻しました' : '課題を完了しました');
   } catch(e) { showToast('エラー: ' + e.message, true); }
 }
 
@@ -1093,7 +1295,7 @@ async function deleteTask(id) {
   try {
     await deleteTaskById(id);
     render();
-    showToast('削除しました');
+    showToast('課題を削除しました');
   } catch(e) { showToast('エラー: ' + e.message, true); }
 }
 
@@ -1103,6 +1305,7 @@ async function toggleRule(id) {
   try {
     await updateRule(id, { active: !r.active });
     renderRules();
+    showToast(r.active ? '定期課題ルールを無効化しました' : '定期課題ルールを有効化しました');
   } catch(e) { showToast('エラー: ' + e.message, true); }
 }
 
@@ -1111,13 +1314,13 @@ async function deleteRule(id) {
   try {
     await deleteRuleById(id);
     renderRules();
-    showToast('ルールを削除しました');
+    showToast('定期課題ルールを削除しました');
   } catch(e) { showToast('エラー: ' + e.message, true); }
 }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // MODAL
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function openModal(id) {
   editId = id || null;
   const m = document.getElementById('modal');
@@ -1126,8 +1329,13 @@ function openModal(id) {
     document.getElementById('modal-title').textContent = '課題を編集';
     document.getElementById('f-title').value = t.title;
     document.getElementById('f-subject').value = t.subject || '';
+    document.getElementById('f-type').value = t.type || '';
     document.getElementById('f-deadline').value = t.deadline || '';
     document.getElementById('f-time').value = t.deadline_time ? t.deadline_time.slice(0,5) : '';
+    // Set priority radio
+    document.querySelectorAll(`input[name="priority"]`).forEach(radio => {
+      radio.checked = radio.value === (t.priority || 'medium');
+    });
     document.getElementById('f-note').value = displayNote(t);
     // disable recurring in edit mode
     document.getElementById('recurring-section').style.display = 'none';
@@ -1135,9 +1343,14 @@ function openModal(id) {
     document.getElementById('modal-title').textContent = '課題を追加';
     document.getElementById('f-title').value = '';
     document.getElementById('f-subject').value = '';
+    document.getElementById('f-type').value = '';
     document.getElementById('f-deadline').value = '';
     document.getElementById('f-time').value = '';
     document.getElementById('f-note').value = '';
+    // Reset priority to medium
+    document.querySelectorAll(`input[name="priority"]`).forEach(radio => {
+      radio.checked = radio.value === 'medium';
+    });
     document.getElementById('recurring-section').style.display = '';
     // reset recurring toggle
     isRecurring = false;
@@ -1167,11 +1380,11 @@ document.querySelectorAll('.day-btn').forEach(btn => {
 
 async function saveTask() {
   const title = document.getElementById('f-title').value.trim();
-  if (!title) { document.getElementById('f-title').focus(); return; }
+  if (!title) { document.getElementById('f-title').focus(); showToast('課題名を入力してください', true); return; }
 
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
-  btn.innerHTML = '<div class="spinner"></div>';
+  btn.innerHTML = '<div class="spinner"></div> 保存中...';
 
   try {
     if (isRecurring && !editId) {
@@ -1180,12 +1393,14 @@ async function saveTask() {
       if (!days.length) { showToast('曜日を選択してください', true); btn.disabled=false; btn.textContent='保存'; return; }
       const weeksAhead = parseInt(document.getElementById('f-weeks-ahead').value);
       const subject = document.getElementById('f-subject').value.trim() || null;
+      const type = document.getElementById('f-type').value || null;
+      const priority = document.querySelector(`input[name="priority"]:checked`)?.value || 'medium';
       const time = document.getElementById('f-time').value || null;
       const note = document.getElementById('f-note').value.trim() || null;
 
       for (const day of days) {
         await insertRule({
-          title, subject,
+          title, subject, type, priority,
           day_of_week: day,
           deadline_time: time,
           weeks_ahead: weeksAhead,
@@ -1202,6 +1417,8 @@ async function saveTask() {
       const data = {
         title,
         subject: document.getElementById('f-subject').value.trim() || null,
+        type: document.getElementById('f-type').value || null,
+        priority: document.querySelector(`input[name="priority"]:checked`)?.value || 'medium',
         deadline: document.getElementById('f-deadline').value || null,
         deadline_time: document.getElementById('f-time').value || null,
         note: document.getElementById('f-note').value.trim() || null,
@@ -1209,7 +1426,7 @@ async function saveTask() {
       };
       if (editId) {
         await updateTask(editId, data);
-        showToast('更新しました');
+        showToast('課題を更新しました');
       } else {
         await insertTask(data);
         showToast('課題を追加しました');
@@ -1227,21 +1444,28 @@ async function saveTask() {
 
 function editTask(id) { openModal(id); }
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // UI HELPERS
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 function setFilter(f, el) {
   currentFilter = f;
   document.querySelectorAll('[data-filt]').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-  const labels = { all:'課題一覧', active:'未完了の課題', done:'完了済みの課題', overdue:'期限切れ', today:'今日締切' };
+  const labels = {
+    all:'課題一覧',
+    active:'未完了の課題',
+    done:'完了済みの課題',
+    overdue:'期限切れ',
+    today:'今日締切',
+    soon:'近日締切'
+  };
   document.getElementById('list-label').textContent = labels[f] || '課題一覧';
   renderTasks();
 }
 
 function setSort(s, el) {
   currentSort = s;
-  document.querySelectorAll('#sort-dl, #sort-cr').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('#sort-dl, #sort-cr, #sort-pri').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
   renderTasks();
 }
@@ -1252,7 +1476,7 @@ function switchTab(tab) {
   document.getElementById('pane-recurring').style.display = tab === 'recurring' ? '' : 'none';
   document.getElementById('tab-tasks').className = 'tab-btn' + (tab==='tasks' ? ' active' : '');
   document.getElementById('tab-recurring').className = 'tab-btn' + (tab==='recurring' ? ' active' : '');
-  document.getElementById('add-btn').textContent = tab === 'tasks' ? '＋ 追加' : '＋ 追加';
+  document.getElementById('add-btn').textContent = tab === 'tasks' ? '＋ 課題を追加' : '＋ 課題を追加';
   document.getElementById('stats-strip').style.display = tab === 'tasks' ? '' : 'none';
 }
 
@@ -1262,7 +1486,7 @@ function showToast(msg, isErr) {
   t.textContent = msg;
   t.className = 'toast show' + (isErr ? ' err' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.className = 'toast', 2800);
+  toastTimer = setTimeout(() => t.className = 'toast', 3000);
 }
 
 function esc(s) {
@@ -1273,11 +1497,15 @@ function esc(s) {
 document.addEventListener('keydown', e => {
   if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) openModal();
   if (e.key === 'Escape') closeModal();
+  if (e.key === 'f' && (e.ctrlKey || e.metaKey) && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    document.getElementById('search-input').focus();
+  }
 });
 
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 // INIT
-// ════════════════════════════════════════════
+// ═══════════════════════════════════════════
 async function init() {
   const cfg = loadConfig();
   if (!cfg) return; // show setup screen
